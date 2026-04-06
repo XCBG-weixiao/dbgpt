@@ -287,22 +287,22 @@ dbgpt start
 
 #### Text2SQL 微调模型
 
-  |     LLM     |  Supported  | 
-  |:-----------:|:-----------:|
-  |    LLaMA    |      ✅     |
-  |   LLaMA-2   |      ✅     | 
-  |    BLOOM    |      ✅     | 
-  |   BLOOMZ    |      ✅     | 
-  |   Falcon    |      ✅     | 
-  |  Baichuan   |      ✅     | 
-  |  Baichuan2  |      ✅     | 
-  |  InternLM   |      ✅     |
-  |    Qwen     |      ✅     | 
-  |   XVERSE    |      ✅     | 
-  |  ChatGLM2   |      ✅     |
+|     LLM     |  Supported  |
+|:-----------:|:-----------:|
+|    LLaMA    |      ✅     |
+|   LLaMA-2   |      ✅     |
+|    BLOOM    |      ✅     |
+|   BLOOMZ    |      ✅     |
+|   Falcon    |      ✅     |
+|  Baichuan   |      ✅     |
+|  Baichuan2  |      ✅     |
+|  InternLM   |      ✅     |
+|    Qwen     |      ✅     |
+|   XVERSE    |      ✅     |
+|  ChatGLM2   |      ✅     |
 
 ### 支持模型
-    
+
 <table>
       <thead>
         <tr>
@@ -527,5 +527,305 @@ The MIT License (MIT)
         </p>
     </figure>
 </div>
-
 [![Star History Chart](https://api.star-history.com/svg?repos=csunny/DB-GPT&type=Date)](https://star-history.com/#csunny/DB-GPT)
+
+## 修改后启动指南
+
+#### windows
+
+
+
+在 Windows PowerShell 下，最稳妥的启动顺序我建议分成两种。
+
+**1. 只启动 DB-GPT 后端/内置 Web 服务**
+这个适合先把 Python 服务跑起来。项目要求 Python 3.11，见 [.python-version](app://-/index.html?hostId=local)，源码安装文档推荐 uv sync + uv run dbgpt start webserver，见 [docs/docs/quickstart.md](app://-/index.html?hostId=local)。
+
+在仓库根目录 D:\pythonProjects\DB-GPT-main 执行：
+
+```
+cd D:\pythonProjects\DB-GPT-main uv python install 3.11 uv venv --python 3.11 uv sync --all-packages --extra "base" --extra "proxy_openai" --extra "rag" $env:OPENAI_API_KEY = "你的_OPENAI_API_KEY" uv run dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+启动后访问：
+
+```
+http://localhost:5670 
+```
+
+如果你用 DeepSeek，可以改成：
+
+```
+uv sync --all-packages --extra "base" --extra "proxy_openai" --extra "rag" --extra "hf" $env:OPENAI_API_KEY = "你的_DeepSeek_API_Key" uv run dbgpt start webserver --config configs/dbgpt-proxy-deepseek.toml 
+```
+
+可用配置文件都在 [configs](app://-/index.html?hostId=local) 目录，比如：
+
+- [configs/dbgpt-proxy-openai.toml](app://-/index.html?hostId=local)
+- [configs/dbgpt-proxy-deepseek.toml](app://-/index.html?hostId=local)
+- [configs/dbgpt-local-glm.toml](app://-/index.html?hostId=local)
+
+**2. 如果你要看到 web/ 里前端源码的改动**
+你这次改的是 [web](app://-/index.html?hostId=local) 下的前端代码，所以最稳妥的是前后端分开跑。uv 只负责 Python 后端，前端仍然按 [web/README.md](app://-/index.html?hostId=local) 用 Next.js dev server 启动。
+
+先开第一个 PowerShell 跑后端：
+
+```
+cd D:\pythonProjects\DB-GPT-main uv python install 3.11 uv venv --python 3.11 uv sync --all-packages --extra "base" --extra "proxy_openai" --extra "rag" $env:OPENAI_API_KEY = "你的_OPENAI_API_KEY" uv run dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+再开第二个 PowerShell 跑前端：
+
+```
+cd D:\pythonProjects\DB-GPT-main\web copy .env.template .env 
+```
+
+把 .env 里的 API_BASE_URL 改成后端地址，例如：
+
+```
+API_BASE_URL=http://127.0.0.1:5670 
+```
+
+然后执行：
+
+```
+npm install npm run dev 
+```
+
+前端开发地址通常是：
+
+```
+http://localhost:3000 
+```
+
+**3. 关于 CLI 怎么用**
+如果你已经 uv sync 完成了，CLI 当然还能用。最稳的是直接：
+
+```
+uv run dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+如果你想激活虚拟环境再用，也可以：
+
+```
+.\.venv\Scripts\Activate.ps1 dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+我建议你在 Windows 下优先用 uv run ...，比手动激活环境更稳，少掉很多 PATH 和 PowerShell 执行策略问题。
+
+如果你愿意，我可以下一步直接按你现在这个仓库状态，给你一份“OpenAI 代理模式”和“一份本地模型模式”的 Windows 启动清单。
+
+#### linux
+
+下面给你一份基于当前源码仓库、适用于 Linux 的启动指南。按这套做，可以跑到你本地修改后的代码，不会误用之前 pip install dbgpt 的旧版本。
+
+**推荐方式**
+优先用 uv + 当前仓库源码启动。
+
+**一、准备环境**
+
+安装基础依赖：
+
+```
+sudo apt update sudo apt install -y git curl build-essential pkg-config python3-dev 
+```
+
+安装 uv：
+
+```
+curl -LsSf https://astral.sh/uv/install.sh | sh source ~/.bashrc 
+```
+
+确认版本：
+
+```
+uv --version 
+```
+
+如果你要同时跑前端开发版，还需要 Node.js 18+ 和 npm：
+
+```
+node -v npm -v 
+```
+
+**二、进入项目**
+
+```
+cd /path/to/DB-GPT-main 
+```
+
+建议先确认 Python 版本，仓库里要求的是 3.11。
+
+**三、创建虚拟环境并安装源码依赖**
+
+如果你是 OpenAI 代理模式，先执行：
+
+```
+uv python install 3.11 uv venv --python 3.11 uv sync --all-packages --extra "base" --extra "proxy_openai" --extra "rag" 
+```
+
+如果你想用 DeepSeek，并且还要本地 embedding / HF 相关能力，可以用：
+
+```
+uv python install 3.11 uv venv --python 3.11 uv sync --all-packages --extra "base" --extra "proxy_openai" --extra "rag" --extra "hf" 
+```
+
+这一步完成后，当前仓库自己的 .venv 和本地源码会关联起来。
+
+**四、启动后端服务**
+
+OpenAI 代理模式：
+
+```
+export OPENAI_API_KEY="你的_API_KEY" uv run dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+DeepSeek 代理模式：
+
+```
+export OPENAI_API_KEY="你的_DeepSeek_API_Key" uv run dbgpt start webserver --config configs/dbgpt-proxy-deepseek.toml 
+```
+
+启动后访问：
+
+```
+http://127.0.0.1:5670 
+```
+
+**五、如果你要跑到这次修改过的前端源码**
+
+因为你这次改了 web/ 下的前端，所以最稳妥的是前后端分开跑。
+
+先开终端 1，启动后端：
+
+```
+cd /path/to/DB-GPT-main export OPENAI_API_KEY="你的_API_KEY" uv run dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+再开终端 2，启动前端：
+
+```
+cd /path/to/DB-GPT-main/web cp .env.template .env 
+```
+
+把 .env 里的 API_BASE_URL 改成：
+
+```
+API_BASE_URL=http://127.0.0.1:5670 
+```
+
+然后执行：
+
+```
+npm install npm run dev 
+```
+
+前端访问地址一般是：
+
+```
+http://127.0.0.1:3000 
+```
+
+这样你看到的就是你当前源码里的前端改动，包括登录/注册界面。
+
+**六、还能不能用 dbgpt start**
+
+可以，但有前提。
+
+如果你想直接用 dbgpt start，要先进入当前仓库的虚拟环境：
+
+```
+cd /path/to/DB-GPT-main source .venv/bin/activate dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+更推荐的仍然是：
+
+```
+uv run dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+因为它不容易串到系统里以前 pip install dbgpt 的旧版本。
+
+**七、如果你只想用 PyPI 版本，不关心本地修改**
+
+那就不是运行当前仓库代码，而是运行发布版：
+
+```
+uv venv --python 3.11 source .venv/bin/activate uv pip install dbgpt-app dbgpt start 
+```
+
+但这不会包含你当前仓库里新改的登录功能。
+
+**八、最常见问题**
+
+1. dbgpt: command not found
+   原因通常是你没激活 .venv，或者没用 uv run。
+   优先改用：
+
+```
+uv run dbgpt start webserver --config configs/dbgpt-proxy-openai.toml 
+```
+
+1. 启动了但看不到前端改动
+   说明你只跑了 Python 后端，没有跑 web/ 的前端开发服务，或者用的是旧静态资源。
+2. 用了全局 pip install dbgpt 后命令冲突
+   优先不要直接敲全局 dbgpt，而是始终在仓库里用：
+
+```
+uv run dbgpt ... 
+```
+
+如果你要，我可以继续给你补一份：
+
+- “Linux 下 OpenAI 模式一键启动版”
+- 或者“Linux 下前后端双进程启动版”
+  我可以直接写成可复制的 shell 脚本。
+
+## 代码解读
+
+**整体结构**
+这个 agent 框架是典型的“协议层 + 运行时 + 能力插件 + 编排层 + 服务装配层”设计。核心代码在 [packages/dbgpt-core/src/dbgpt/agent/**init**.py](app://-/index.html?hostId=local)，服务接入在 [packages/dbgpt-serve/src/dbgpt_serve/agent/agents/app_agent_manage.py#L38](app://-/index.html?hostId=local)。
+
+**核心抽象**
+
+- Agent 只是协议接口，定义 send/receive/generate_reply/thinking/act/verify，把“通信”“推理”“执行”“校验”拆成独立阶段，见 [agent.py#L16](app://-/index.html?hostId=local)。
+- AgentContext、AgentGenerateContext、AgentMessage 是运行时数据载体，分别承载会话级配置、一次生成过程上下文、以及 agent 间传递的消息对象，见 [agent.py#L197](app://-/index.html?hostId=local) 和 [agent.py#L274](app://-/index.html?hostId=local)。
+- Role 负责“人格与提示词”，ProfileConfig/Profile 负责“模板与配置”，也就是把“谁在说话”与“提示词长什么样”分开，便于动态换语言、换约束、换 prompt，见 [role.py#L34](app://-/index.html?hostId=local) 和 [base.py#L529](app://-/index.html?hostId=local)。
+- ConversableAgent 是真正的运行时核心。它通过 bind() 统一注入 context/memory/resource/llm/profile/action/prompt，说明作者刻意做成了“装配式 agent”，而不是把依赖写死在构造函数里，见 [base_agent.py#L37](app://-/index.html?hostId=local) 和 [base_agent.py#L182](app://-/index.html?hostId=local)。
+
+**执行流程**
+
+- 主流程在 generate_reply()，它严格按 _init_reply_message -> _load_thinking_messages -> thinking -> review -> act -> verify -> write_memories 运行，本质上是一个可重试的 agent loop，见 [base_agent.py#L392](app://-/index.html?hostId=local)。
+- thinking() 只负责调用 LLM，不直接执行动作，所以模型输出和执行逻辑是解耦的；模型失败时会换模型重试，见 [base_agent.py#L668](app://-/index.html?hostId=local)。
+- act() 遍历 actions，让 Action 去解析 LLM 输出并真正执行，这层设计把“文本推理”转成“结构化动作”，见 [base_agent.py#L725](app://-/index.html?hostId=local) 和 [action/base.py#L90](app://-/index.html?hostId=local)。
+- verify() 统一检查 review 结果、action 成功状态和内容完整性，所以失败重试不是由各个 agent 自己散落处理，而是集中在基类里，见 [base_agent.py#L777](app://-/index.html?hostId=local)。
+- _load_thinking_messages() 会把 system prompt、历史记忆、依赖消息、资源提示、当前用户输入拼成最终送给 LLM 的消息列表，这是 prompt engineering 的真正入口，见 [base_agent.py#L1203](app://-/index.html?hostId=local)。
+
+**动作、记忆、资源**
+
+- Action 的设计重点是“定义输出 schema + 解析 LLM 文本 + 执行 run()”，因此每个 agent 的差异主要不在基类，而在绑定了什么 Action，见 [action/base.py#L40](app://-/index.html?hostId=local)。
+- AgentMemory 是 agent 记忆总入口，内部再包一层底层 memory 和 GptsMemory，前者负责检索/遗忘，后者负责会话消息和计划持久化，见 [agent_memory.py#L276](app://-/index.html?hostId=local)。
+- HybridMemory 明显是按“感知记忆 -> 短期记忆 -> 长期记忆”建模的，短期记忆支持增强和迁移，长期记忆走向量库，这部分是比较完整的认知架构设计，见 [hybrid.py#L31](app://-/index.html?hostId=local)。
+- GptsMemory 保存计划和消息，还负责流式消息可视化输出，所以它不只是存储层，也是 agent 会话 UI 的中间层，见 [gpts_memory.py#L24](app://-/index.html?hostId=local)。
+- Resource/ResourceManager 把数据库、知识库、工具、插件等都统一成资源类型，再由 build_resource() 按配置实例化，说明这个框架想把“工具调用”与“知识注入”统一成资源装配问题，见 [base.py#L89](app://-/index.html?hostId=local) 和 [manage.py#L76](app://-/index.html?hostId=local)。
+- ResourcePack 是组合器，允许一个 agent 同时绑定多个资源，再统一生成 prompt 或路由执行，见 [pack.py#L21](app://-/index.html?hostId=local)。
+- BaseTool/FunctionTool/@tool 这套封装说明工具本质上也是一种资源，只是多了参数 schema 和可执行函数包装，见 [tool/base.py#L64](app://-/index.html?hostId=local)。
+
+**多 Agent 编排**
+
+- AgentManager 用扫描注册的方式发现 expand 目录里的具体 agent，实现“框架定义协议，业务 agent 自动注册”，见 [agent_manage.py#L47](app://-/index.html?hostId=local)。
+- expand 目录下的 agent 大多很薄，比如 SimpleAssistantAgent、ToolAssistantAgent 主要就是预置 profile 和 action，这说明作者希望新增 agent 的成本尽量低，见 [simple_assistant_agent.py#L16](app://-/index.html?hostId=local) 和 [tool_assistant_agent.py#L12](app://-/index.html?hostId=local)。
+- PlannerAgent 专门生成计划，PlanAction 负责把计划落成结构化步骤并写入 plans_memory，见 [planner_agent.py#L14](app://-/index.html?hostId=local) 和 [plan_action.py#L38](app://-/index.html?hostId=local)。
+- AutoPlanChatManager 是真正的 team manager。它读取待办 plan，选 speaker，处理依赖步骤结果，再驱动子 agent 执行，所以“计划生成”和“计划推进”被分成了两个角色，见 [team_auto_plan.py#L21](app://-/index.html?hostId=local)。
+- AWEL 那条线是另一种编排模式，不靠 planner 动态调度，而是把 agent 放进 DAG 里按流程跑，适合固定流程应用，见 [team_awel_layout.py#L83](app://-/index.html?hostId=local) 和 [agent_operator.py#L137](app://-/index.html?hostId=local)。
+
+**中间件与技能**
+
+- MiddlewareAgent 在 ConversableAgent 外再包一层生命周期 hook，允许在 init、thinking、act、prompt 修改等阶段插入逻辑，见 [middleware/agent.py#L41](app://-/index.html?hostId=local)。
+- SkillsMiddlewareV2 本质上是在生成回复前自动匹配 skill，并在 system prompt 前插入技能说明，所以它不是新执行引擎，而是 prompt augmentation 插件，见 [middleware_v2.py#L17](app://-/index.html?hostId=local)。
+
+**服务层如何装配**
+
+- 入口装配在 AppManager.user_chat_2_app()：先构造 AgentContext，再创建 app agent，再让 UserProxyAgent 发起对话，见 [app_agent_manage.py#L68](app://-/index.html?hostId=local)。
+- create_agent_from_gpt_detail() 根据数据库里的 agent 定义，把 llm_config/resource/prompt/memory/context 绑定到具体 agent 类上，这就是业务配置转运行实例的关键桥梁，见 [app_agent_manage.py#L198](app://-/index.html?hostId=local)。
+- create_agent_of_gpts_app() 根据 TeamMode 选择单 agent、自动规划 team 或 AWEL flow，所以应用层真正决定的是“编排模式”，不是底层 agent 实现，见 [app_agent_manage.py#L237](app://-/index.html?hostId=local)。
+- MetaDbGptsPlansMemory 和 MetaDbGptsMessageMemory 把计划/消息持久化到数据库，说明 core 层是接口化的，serve 层再决定落地存储，见 [db_gpts_memory.py#L14](app://-/index.html?hostId=local)。

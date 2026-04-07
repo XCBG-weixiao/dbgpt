@@ -219,6 +219,108 @@ On first run, an interactive setup wizard will guide you through choosing an LLM
 
 Visit [http://localhost:5670](http://localhost:5670) — you're all set! 🎉
 
+### Run the Pure CLI Agent on Linux
+
+If you want to run the terminal-only agent without starting the web server, use a source checkout on Linux.
+
+> **Prerequisites:** Python `3.11`, `uv`, and an API key for the provider you want to use.
+
+**1. Prepare the environment**
+
+```bash
+cd /path/to/DB-GPT-main
+
+uv python install 3.11
+uv venv --python 3.11
+source .venv/bin/activate
+
+uv sync --all-packages --extra "cli" --extra "agent" --extra "proxy_openai"
+```
+
+If you want to use another provider, install the matching extra instead of `proxy_openai`, for example:
+
+- `proxy_tongyi`
+- `proxy_zhipuai`
+- `proxy_anthropic`
+
+**2. Start the CLI agent**
+
+With OpenAI-compatible models:
+
+```bash
+export OPENAI_API_KEY="sk-xxx"
+uv run dbgpt agent chat --language en
+```
+
+With a configured DB-GPT profile:
+
+```bash
+uv run dbgpt agent chat --profile openai --language en
+```
+
+Run one prompt and exit:
+
+```bash
+export OPENAI_API_KEY="sk-xxx"
+uv run dbgpt agent chat \
+  --prompt "Summarize what this repository does." \
+  --new-session \
+  --language en
+```
+
+Use a custom transcript file:
+
+```bash
+export OPENAI_API_KEY="sk-xxx"
+uv run dbgpt agent chat \
+  --history-file ~/.dbgpt/agent_history/demo.jsonl \
+  --session-id demo \
+  --language zh
+```
+
+By default, transcripts are written to:
+
+```bash
+~/.dbgpt/agent_history/<session-id>.jsonl
+```
+
+**3. Verify the CLI agent**
+
+Check that the command is wired correctly:
+
+```bash
+uv run dbgpt agent chat --help
+```
+
+Run a one-shot verification:
+
+```bash
+export OPENAI_API_KEY="sk-xxx"
+uv run dbgpt agent chat \
+  --prompt "Reply with exactly: CLI agent is working." \
+  --new-session \
+  --language en
+```
+
+Expected result:
+
+- the command exits with code `0`
+- the terminal prints an assistant reply
+- a transcript file is created under `~/.dbgpt/agent_history/`
+
+Inspect the transcript:
+
+```bash
+cat ~/.dbgpt/agent_history/default.jsonl
+```
+
+If you are debugging directly from source without installing the package into the environment yet, you can also use:
+
+```bash
+PYTHONPATH="$(pwd)/packages/dbgpt-core/src" \
+python -m dbgpt.cli.cli_scripts agent chat --help
+```
+
 ### Advanced Installation
 
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)

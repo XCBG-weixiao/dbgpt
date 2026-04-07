@@ -340,6 +340,13 @@ try:
 except ImportError as e:
     logging.warning(f"Integrating dbgpt net command line tool failed: {e}")
 
+try:
+    from dbgpt.cli._agent_cmd import agent_cli_group
+
+    add_command_alias(agent_cli_group, name="agent", parent_group=cli)
+except ImportError as e:
+    logging.warning(f"Integrating dbgpt pure agent command line tool failed: {e}")
+
 
 def main():
     return cli()

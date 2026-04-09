@@ -1,0 +1,35 @@
+# 基于DBGPT 二次开发
+
+## 后端
+
+uv sync --all-packages \
+--extra "base" \
+--extra "proxy_openai" \
+--extra "rag" \
+--extra "storage_chromadb" \
+--extra "dbgpts"
+
+然后在 `configs/dbgpt-proxy-openai.toml` 中修改配置即可
+
+`uv run dbgpt start webserver --config configs/dbgpt-proxy-openai.toml`
+
+或
+
+`uv run python packages/dbgpt-app/src/dbgpt_app/dbgpt_server.py --config configs/dbgpt-proxy-openai.toml`
+
+## 前端
+
+```bash
+cd web
+```
+
+修改 `next.config.js`，其他的不用动，下载之前把 package-lock.json 和 node_modules 删掉
+
+然后
+```bash
+npm install
+
+npm run dev
+```
+
+

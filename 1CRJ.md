@@ -32,4 +32,25 @@ npm install
 npm run dev
 ```
 
+## 介绍前端
+
+参考 https://copilot.tencent.com/work/ ，写一个介绍该产品的前端页面，
+
+
+## Todo
+
+- 中断
+- 需要根据对话内容决定是否可视化/报告
+- skills 可视化中文编码出错
+
+
+
+
+
+
+
+
+
+
+
 
